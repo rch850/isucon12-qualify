@@ -20,6 +20,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gofrs/flock"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -796,10 +797,7 @@ func playersAddHandler(c echo.Context) error {
 	timeInsert := int64(0)
 	for _, displayName := range displayNames {
 		n1 := time.Now().UnixMilli()
-		id, err := dispenseID(ctx)
-		if err != nil {
-			return fmt.Errorf("error dispenseID: %w", err)
-		}
+		id := uuid.NewString()
 		timeId += time.Now().UnixMilli() - n1
 
 		now := time.Now().Unix()
