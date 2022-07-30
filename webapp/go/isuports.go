@@ -795,33 +795,30 @@ func playersAddHandler(c echo.Context) error {
 	pds := make([]PlayerDetail, 0, len(displayNames))
 	timeId := int64(0)
 	timeInsert := int64(0)
+	placeholders := []string{}
+	values := make([]interface{}, 0)
 	for _, displayName := range displayNames {
 		n1 := time.Now().UnixMilli()
 		id := uuid.NewString()
 		timeId += time.Now().UnixMilli() - n1
 
 		now := time.Now().Unix()
+		placeholders = append(placeholders, "(?, ?, ?, ?, ?, ?)")
+		values = append(values, id, v.tenantID, displayName, false, now, now)
 		n2 := time.Now().UnixMilli()
-		if _, err := tenantDB.ExecContext(
-			ctx,
-			"INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
-			id, v.tenantID, displayName, false, now, now,
-		); err != nil {
-			return fmt.Errorf(
-				"error Insert player at tenantDB: id=%s, displayName=%s, isDisqualified=%t, createdAt=%d, updatedAt=%d, %w",
-				id, displayName, false, now, now, err,
-			)
-		}
 		timeInsert += time.Now().UnixMilli() - n2
-		p, err := retrievePlayer(ctx, tenantDB, id)
-		if err != nil {
-			return fmt.Errorf("error retrievePlayer: %w", err)
-		}
 		pds = append(pds, PlayerDetail{
-			ID:             p.ID,
-			DisplayName:    p.DisplayName,
-			IsDisqualified: p.IsDisqualified,
+			ID:             id,
+			DisplayName:    displayName,
+			IsDisqualified: false,
 		})
+	}
+	if _, err := tenantDB.ExecContext(
+		ctx,
+		"INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES "+strings.Join(placeholders, ","),
+		values...,
+	); err != nil {
+		return fmt.Errorf("error Insert player at tenantDB")
 	}
 
 	fmt.Println("[DEBUG]", "Count", len(displayNames), "ID", timeId, "Insert", timeInsert)
