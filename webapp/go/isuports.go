@@ -792,13 +792,18 @@ func playersAddHandler(c echo.Context) error {
 	displayNames := params["display_name[]"]
 
 	pds := make([]PlayerDetail, 0, len(displayNames))
+	timeId := int64(0)
+	timeInsert := int64(0)
 	for _, displayName := range displayNames {
+		n1 := time.Now().UnixMilli()
 		id, err := dispenseID(ctx)
 		if err != nil {
 			return fmt.Errorf("error dispenseID: %w", err)
 		}
+		timeId += time.Now().UnixMilli() - n1
 
 		now := time.Now().Unix()
+		n2 := time.Now().UnixMilli()
 		if _, err := tenantDB.ExecContext(
 			ctx,
 			"INSERT INTO player (id, tenant_id, display_name, is_disqualified, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
@@ -809,6 +814,7 @@ func playersAddHandler(c echo.Context) error {
 				id, displayName, false, now, now, err,
 			)
 		}
+		timeInsert += time.Now().UnixMilli() - n2
 		p, err := retrievePlayer(ctx, tenantDB, id)
 		if err != nil {
 			return fmt.Errorf("error retrievePlayer: %w", err)
@@ -820,6 +826,7 @@ func playersAddHandler(c echo.Context) error {
 		})
 	}
 
+	fmt.Println("[DEBUG]", "Count", len(displayNames), "ID", timeId, "Insert", timeInsert)
 	res := PlayersAddHandlerResult{
 		Players: pds,
 	}
